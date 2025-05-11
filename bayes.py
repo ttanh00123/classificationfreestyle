@@ -19,10 +19,11 @@ def process_message(message):
     stop_words = set(stopwords.words('english'))
     
     # Cleaning
-    message = re.sub(r'\$\w*', '', message)
-    message = re.sub(r'^RT[\s]+', '', message)
-    message = re.sub(r'https?://[^\s\n\r]+', '', message)
-    message = re.sub(r'#', '', message)
+    message = re.sub(r'\$\w*', '', message) # Remove dollar signs
+    message = re.sub(r'^RT[\s]+', '', message) # Remove Retweets
+    message = re.sub(r'https?://[^\s\n\r]+', '', message) # Remove URLs
+    message = re.sub(r'#', '', message) # Remove hashtags
+    message = re.sub(r'@[^\s]+', '', message) # Remove mentions
     
     tokenizer = TweetTokenizer(preserve_case=False, strip_handles=True, reduce_len=True)
     tokens = tokenizer.tokenize(message)
@@ -61,7 +62,7 @@ def train_naive_bayes(freqs, train_x, train_y):
         freq_spam = freqs.get((word, 1), 0)
         freq_ham = freqs.get((word, 0), 0)
 
-        p_w_spam = (freq_spam + 1) / (N_spam + V)
+        p_w_spam = (freq_spam + 1) / (N_spam + V) #laplace smoothing to prevent zero probabilities
         p_w_ham = (freq_ham + 1) / (N_ham + V)
 
         loglikelihood[word] = np.log(p_w_spam / p_w_ham)
@@ -75,7 +76,7 @@ def predict_message(message, logprior, loglikelihood):
     words = process_message(message)
     score = logprior
     for word in words:
-        if word in loglikelihood:
+        if word in loglikelihood: #so that words not trained in vocab dont affect score
             score += loglikelihood[word]
     return 1 if score > 0 else 0
 
@@ -105,3 +106,4 @@ y_pred = predict_all(X_test, logprior, loglikelihood)
 
 print("Accuracy:", accuracy_score(y_test, y_pred))
 print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
+print("Classification Report:\n", classification_report(y_test, y_pred))
